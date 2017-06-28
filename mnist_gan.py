@@ -37,7 +37,7 @@ from tqdm import tqdm
 parser = argparse.ArgumentParser()
 parser.add_argument('--plot', help='plot results (default false)', default=False, action='store_true')
 parser.add_argument('--load', help='load from file (default false)', default=False, action='store_true')
-parser.add_argument('--save', help='save (default false)', default=False, action='store_true')
+parser.add_argument('--train', help='train (default false)', default=False, action='store_true')
 commandline_args = parser.parse_args()
 
 img_rows, img_cols = 28, 28
@@ -227,9 +227,9 @@ def train_for_n(epochs=5000, plt_frq=25,BATCH_SIZE=32):
         
         # Updates plots
         if e%plt_frq==plt_frq-1:
-            if commandline_args.save:
-                generator.save_weights("generator.h5")
-                discriminator.save_weights("discriminator.h5")
+            generator.save_weights("generator.h5")
+            discriminator.save_weights("discriminator.h5")
+
             if commandline_args.plot:
                 plt.close("all")
                 plot_loss(losses)
@@ -249,13 +249,8 @@ def train_for_n(epochs=5000, plt_frq=25,BATCH_SIZE=32):
 #dopt.lr.set_value(1e-5)
 #train_for_n(epochs=2000, plt_frq=500,BATCH_SIZE=32)
 
-train_for_n(epochs=1000, plt_frq=5,BATCH_SIZE=32)
-
-# Plot the final loss curves
-plot_loss(losses)
-
-# Plot some generated images from our GAN
-plot_gen(25,(5,5),(12,12))
+if commandline_args.train:
+    train_for_n(epochs=5000, plt_frq=5,BATCH_SIZE=32)
 
 def plot_real(n_ex=16,dim=(4,4), figsize=(10,10) ):
     
@@ -265,11 +260,22 @@ def plot_real(n_ex=16,dim=(4,4), figsize=(10,10) ):
     plt.figure(figsize=figsize)
     for i in range(generated_images.shape[0]):
         plt.subplot(dim[0],dim[1],i+1)
-        img = generated_images[i,0,:,:]
+        if keras.backend.image_data_format() == 'channels_first':
+            img = generated_images[i,0,:,:]
+        else:
+            img = generated_images[i,:,:,0]
         plt.imshow(img)
         plt.axis('off')
     plt.tight_layout()
     plt.show()
 
-# Plot real MNIST images for comparison
-plot_real()
+if commandline_args.plot:
+    plt.close("all")
+    # Plot the final loss curves
+    plot_loss(losses)
+
+    # Plot some generated images from our GAN
+    plot_gen(25,(5,5),(12,12))
+
+    # Plot real MNIST images for comparison
+    plot_real()
