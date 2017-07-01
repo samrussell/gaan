@@ -156,9 +156,9 @@ def plot_gen(n_ex=16,dim=(4,4), figsize=(10,10) ):
     for i in range(generated_images.shape[0]):
         plt.subplot(dim[0],dim[1],i+1)
         if keras.backend.image_data_format() == 'channels_first':
-            img = generated_images[i,0,:,:]
+            img = generated_images[i,:,:,:]
         else:
-            img = generated_images[i,:,:,0]
+            img = generated_images[i,:,:,:]
         plt.imshow(img)
         plt.axis('off')
     plt.tight_layout()
@@ -261,9 +261,9 @@ def plot_real(n_ex=16,dim=(4,4), figsize=(10,10) ):
     for i in range(generated_images.shape[0]):
         plt.subplot(dim[0],dim[1],i+1)
         if keras.backend.image_data_format() == 'channels_first':
-            img = generated_images[i,0,:,:]
+            img = generated_images[i,:,:,:]
         else:
-            img = generated_images[i,:,:,0]
+            img = generated_images[i,:,:,:]
         plt.imshow(img)
         plt.axis('off')
     plt.tight_layout()
