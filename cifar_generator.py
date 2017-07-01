@@ -237,18 +237,19 @@ def train_for_n(epochs=5000, plt_frq=25,BATCH_SIZE=32):
         
 
 if commandline_args.train:
+    train_for_n(epochs=10000, plt_frq=500,BATCH_SIZE=32)
     # Train for 6000 epochs at original learning rates
-    train_for_n(epochs=6000, plt_frq=500,BATCH_SIZE=32)
+    #train_for_n(epochs=6000, plt_frq=500,BATCH_SIZE=32)
 
     # Train for 2000 epochs at reduced learning rates
-    opt.lr.set_value(1e-5)
-    dopt.lr.set_value(1e-4)
-    train_for_n(epochs=2000, plt_frq=500,BATCH_SIZE=32)
+    #opt.lr.set_value(1e-5)
+    #dopt.lr.set_value(1e-4)
+    #train_for_n(epochs=2000, plt_frq=500,BATCH_SIZE=32)
 
     # Train for 2000 epochs at reduced learning rates
-    opt.lr.set_value(1e-6)
-    dopt.lr.set_value(1e-5)
-    train_for_n(epochs=2000, plt_frq=500,BATCH_SIZE=32)
+    #opt.lr.set_value(1e-6)
+    #dopt.lr.set_value(1e-5)
+    #train_for_n(epochs=2000, plt_frq=500,BATCH_SIZE=32)
 
 
 #    train_for_n(epochs=5000, plt_frq=5,BATCH_SIZE=32)
