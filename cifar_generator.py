@@ -5,9 +5,8 @@
 # See: https://oshearesearch.com/index.php/2016/07/01/mnist-generative-adversarial-model-in-keras/
 #
 #%matplotlib inline
-import sys,os,random
+import os,random
 os.environ["KERAS_BACKEND"] = "theano"
-from PIL import Image
 import argparse
 import numpy as np
 import theano as th
@@ -25,6 +24,7 @@ from keras.layers.recurrent import LSTM
 from keras.regularizers import *
 from keras.layers.normalization import *
 from keras.optimizers import *
+from keras.datasets import cifar10
 import matplotlib.pyplot as plt
 import seaborn as sns
 import cPickle, random, sys, keras
@@ -40,34 +40,27 @@ parser.add_argument('--load', help='load from file (default false)', default=Fal
 parser.add_argument('--train', help='train (default false)', default=False, action='store_true')
 commandline_args = parser.parse_args()
 
-img_rows, img_cols = 256, 256
+img_rows, img_cols = 32, 32
 
-# load data
-images = []
-images_path = "images/processed"
-filenames = os.listdir(images_path)
-for filename in filenames:
-  if filename.endswith(".png"):
-    image = Image.open("%s/%s" % (images_path, filename)).convert('RGB')
-    image_data = np.asarray(image, dtype='float32')
-    if keras.backend.image_data_format() == 'channels_first':
-        image_data = image_data.transpose(2, 0, 1)
-    images.append(image_data)
-    #for y in xrange(0, (height - img_rows)/2, 2):
-    #  for x in xrange(0, (width - img_cols)/2, 2):
-    #    # crop
-    #    next_image = big_image[:, x:x+img_cols,y:y+img_rows]
-    #    positive_images.append(next_image)
-    #    positive_labels.append(1)
+# the data, shuffled and split between train and test sets
+(X_train, y_train), (X_test, y_test) = cifar10.load_data()
 
-X_train = np.array(images)
+#if keras.backend.image_data_format() == 'channels_first':
+#    X_train = X_train.reshape(X_train.shape[0], 1, img_rows, img_cols)
+#    X_test = X_test.reshape(X_test.shape[0], 1, img_rows, img_cols)
+#else:
+#    X_train = X_train.reshape(X_train.shape[0], img_rows, img_cols, 1)
+#    X_test = X_test.reshape(X_test.shape[0], img_rows, img_cols, 1)
 X_train = X_train.astype('float32')
+X_test = X_test.astype('float32')
 X_train /= 255
+X_test /= 255
 
 print np.min(X_train), np.max(X_train)
 
 print('X_train shape:', X_train.shape)
 print(X_train.shape[0], 'train samples')
+print(X_test.shape[0], 'test samples')
 
 def make_trainable(net, val):
     net.trainable = val
@@ -80,34 +73,21 @@ opt = Adam(lr=1e-4)
 dopt = Adam(lr=1e-3)
 
 # Build Generative model ...
-nch = 64
+nch = 200
 g_input = Input(shape=[100])
-H = Dense(nch*4*4, kernel_initializer='glorot_normal')(g_input)
+H = Dense(nch*8*8, kernel_initializer='glorot_normal')(g_input)
 H = BatchNormalization()(H)
 H = Activation('relu')(H)
 if keras.backend.image_data_format() == 'channels_first':
-    H = Reshape( [nch, 4, 4] )(H)
+    H = Reshape( [nch, 8, 8] )(H)
 else:    
-    H = Reshape(  [4, 4, nch] )(H)
-# 16x16
-H = UpSampling2D(size=(4, 4))(H)
+    H = Reshape(  [8, 8, nch] )(H)
+H = UpSampling2D(size=(2, 2))(H)
 H = Convolution2D(nch/2, (3, 3), padding='same', kernel_initializer='glorot_uniform')(H)
 H = BatchNormalization()(H)
 H = Activation('relu')(H)
+H = UpSampling2D(size=(2, 2))(H)
 H = Convolution2D(nch/2, (3, 3), padding='same', kernel_initializer='glorot_uniform')(H)
-H = BatchNormalization()(H)
-H = Activation('relu')(H)
-# 64x64
-H = UpSampling2D(size=(4, 4))(H)
-H = Convolution2D(nch/4, (3, 3), padding='same', kernel_initializer='glorot_uniform')(H)
-H = BatchNormalization()(H)
-H = Activation('relu')(H)
-H = Convolution2D(nch/4, (3, 3), padding='same', kernel_initializer='glorot_uniform')(H)
-H = BatchNormalization()(H)
-H = Activation('relu')(H)
-# 256x256
-H = UpSampling2D(size=(4, 4))(H)
-H = Convolution2D(nch/4, (3, 3), padding='same', kernel_initializer='glorot_uniform')(H)
 H = BatchNormalization()(H)
 H = Activation('relu')(H)
 H = Convolution2D(nch/4, (3, 3), padding='same', kernel_initializer='glorot_uniform')(H)
@@ -122,28 +102,13 @@ generator.summary()
 
 # Build Discriminative model ...
 d_input = Input(shape=shp)
-# 256x256
-H = Convolution2D(8, (5, 5), strides=(2, 2), padding = 'same', activation='relu')(d_input)
+H = Convolution2D(32, (5, 5), strides=(2, 2), padding = 'same', activation='relu')(d_input)
 H = LeakyReLU(0.2)(H)
 H = Dropout(dropout_rate)(H)
-# 128x128
-H = Convolution2D(8, (5, 5), strides=(2, 2), padding = 'same', activation='relu')(H)
-H = LeakyReLU(0.2)(H)
-H = Dropout(dropout_rate)(H)
-# 64x64
-H = Convolution2D(16, (5, 5), strides=(2, 2), padding = 'same', activation='relu')(H)
-H = LeakyReLU(0.2)(H)
-H = Dropout(dropout_rate)(H)
-# 32x32
-H = Convolution2D(16, (5, 5), strides=(2, 2), padding = 'same', activation='relu')(H)
-H = LeakyReLU(0.2)(H)
-H = Dropout(dropout_rate)(H)
-# 16x16
-H = Convolution2D(32, (5, 5), strides=(2, 2), padding = 'same', activation='relu')(H)
-H = LeakyReLU(0.2)(H)
-H = Dropout(dropout_rate)(H)
-# 8x8
 H = Convolution2D(64, (5, 5), strides=(2, 2), padding = 'same', activation='relu')(H)
+H = LeakyReLU(0.2)(H)
+H = Dropout(dropout_rate)(H)
+H = Convolution2D(128, (5, 5), strides=(2, 2), padding = 'same', activation='relu')(H)
 H = LeakyReLU(0.2)(H)
 H = Dropout(dropout_rate)(H)
 H = Flatten()(H)
@@ -156,8 +121,8 @@ discriminator.compile(loss='categorical_crossentropy', optimizer=dopt)
 discriminator.summary()
 
 if commandline_args.load:
-    generator.load_weights("explosm_generator.h5")
-    discriminator.load_weights("explosm_discriminator.h5")
+    generator.load_weights("generator_cifar10.h5")
+    discriminator.load_weights("discriminator_cifar10.h5")
 
 # Freeze weights in the discriminator for stacked training
 def make_trainable(net, val):
@@ -191,9 +156,9 @@ def plot_gen(n_ex=16,dim=(4,4), figsize=(10,10) ):
     for i in range(generated_images.shape[0]):
         plt.subplot(dim[0],dim[1],i+1)
         if keras.backend.image_data_format() == 'channels_first':
-            img = generated_images[i,:,:,:]
+            img = generated_images[i,0,:,:]
         else:
-            img = generated_images[i,:,:,:]
+            img = generated_images[i,:,:,0]
         plt.imshow(img)
         plt.axis('off')
     plt.tight_layout()
@@ -201,10 +166,7 @@ def plot_gen(n_ex=16,dim=(4,4), figsize=(10,10) ):
 
 
 print("built all models")
-ntrain = min(1000, len(images))
-# make it easy if we're just testing
-if not commandline_args.train:
-    ntrain = 20
+ntrain = 1000
 trainidx = random.sample(range(0,X_train.shape[0]), ntrain)
 XT = X_train[trainidx,:,:,:]
 
@@ -265,8 +227,8 @@ def train_for_n(epochs=5000, plt_frq=25,BATCH_SIZE=32):
         
         # Updates plots
         if e%plt_frq==plt_frq-1:
-            generator.save_weights("explosm_generator.h5")
-            discriminator.save_weights("explosm_discriminator.h5")
+            generator.save_weights("generator_cifar10.h5")
+            discriminator.save_weights("discriminator_cifar10.h5")
 
             if commandline_args.plot:
                 plt.close("all")
@@ -299,9 +261,9 @@ def plot_real(n_ex=16,dim=(4,4), figsize=(10,10) ):
     for i in range(generated_images.shape[0]):
         plt.subplot(dim[0],dim[1],i+1)
         if keras.backend.image_data_format() == 'channels_first':
-            img = generated_images[i,:,:,:]
+            img = generated_images[i,0,:,:]
         else:
-            img = generated_images[i,:,:,:]
+            img = generated_images[i,:,:,0]
         plt.imshow(img)
         plt.axis('off')
     plt.tight_layout()
