@@ -167,6 +167,25 @@ def plot_gen(n_ex=16,dim=(4,4), figsize=(10,10) ):
     plt.tight_layout()
     plt.show(block=False)
 
+def plot_real(n_ex=16,dim=(4,4), figsize=(10,10) ):
+    idx = np.random.randint(0,X_train.shape[0],n_ex)
+    generated_images = X_train[idx,:,:,:]
+    real_labels = y_train[idx,:]
+    y_hat = discriminator.predict(generated_images)
+
+    plt.figure(figsize=figsize)
+    for i in range(generated_images.shape[0]):
+        print("Predicted label: %d, expected %d" % (np.argmax(y_hat[i]), np.argmax(real_labels[i])))
+        plt.subplot(dim[0],dim[1],i+1)
+        if keras.backend.image_data_format() == 'channels_first':
+            img = generated_images[i,0,:,:]
+        else:
+            img = generated_images[i,:,:,0]
+        plt.imshow(img)
+        plt.axis('off')
+    plt.tight_layout()
+    plt.show()
+
 
 print("built all models")
 
@@ -174,16 +193,17 @@ if commandline_args.plot:
     ntrain = 1000
     trainidx = random.sample(range(0,X_train.shape[0]), ntrain)
     XT = X_train[trainidx,:,:,:]
+    yt = y_train[trainidx,:]
     noise_gen = np.random.uniform(0,1,size=[XT.shape[0],100])
     generated_images = generator.predict(noise_gen, verbose=True)
     X = np.concatenate((XT, generated_images))
     n = XT.shape[0]
-    y = np.zeros([2*n,2])
-    y[:n,1] = 1
-    y[n:,0] = 1
+    y = np.zeros([2*n,11])
+    y[:n,:] = yt[:,:]
+    y[n:,0] = 10
 
     #make_trainable(discriminator,True)
-    discriminator.fit(X,y, epochs=1, batch_size=128)
+    #discriminator.fit(X,y, epochs=1, batch_size=128)
     y_hat = discriminator.predict(X)
 
     # Measure accuracy of pre-trained discriminator network
@@ -196,7 +216,7 @@ if commandline_args.plot:
     print "Accuracy: %0.02f pct (%d of %d) right"%(acc, n_rig, n_tot)
     plt.close("all")
     # Plot the final loss curves
-    plot_loss(losses)
+    #plot_loss(losses)
 
     # Plot some generated images from our GAN
     plot_gen(25,(5,5),(12,12))
@@ -264,20 +284,3 @@ def train_for_n(epochs=5000, plt_frq=25,BATCH_SIZE=32):
 
 if commandline_args.train:
     train_for_n(epochs=10000, plt_frq=100,BATCH_SIZE=32)
-
-def plot_real(n_ex=16,dim=(4,4), figsize=(10,10) ):
-    
-    idx = np.random.randint(0,X_train.shape[0],n_ex)
-    generated_images = X_train[idx,:,:,:]
-
-    plt.figure(figsize=figsize)
-    for i in range(generated_images.shape[0]):
-        plt.subplot(dim[0],dim[1],i+1)
-        if keras.backend.image_data_format() == 'channels_first':
-            img = generated_images[i,0,:,:]
-        else:
-            img = generated_images[i,:,:,0]
-        plt.imshow(img)
-        plt.axis('off')
-    plt.tight_layout()
-    plt.show()
