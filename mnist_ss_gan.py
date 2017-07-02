@@ -72,8 +72,8 @@ def make_trainable(net, val):
 
 shp = X_train.shape[1:]
 dropout_rate = 0.25
-opt = Adam(lr=1e-5)
-dopt = Adam(lr=1e-4)
+opt = Adam(lr=1e-3)
+dopt = Adam(lr=1e-3)
 
 # Build Generative model ...
 nch = 200
@@ -283,4 +283,4 @@ def train_for_n(epochs=5000, plt_frq=25,BATCH_SIZE=32):
 #train_for_n(epochs=2000, plt_frq=500,BATCH_SIZE=32)
 
 if commandline_args.train:
-    train_for_n(epochs=10000, plt_frq=100,BATCH_SIZE=32)
+    train_for_n(epochs=300000, plt_frq=100,BATCH_SIZE=32)
